@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Avanzado de Elementos Patrimoniales</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --error-color: #e74c3c;
+            --background-color: #ecf0f1;
+            --text-color: #2c3e50;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--background-color);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .column {
+            flex: 1;
+            min-width: 200px;
+            margin: 10px;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .column:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .column h2 {
+            text-align: center;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .elemento {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: move;
+            transition: all 0.2s ease;
+        }
+        .elemento:hover {
+            background-color: #e9e9e9;
+        }
+        .elemento.arrastrando {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        .botonera {
+            text-align: center;
+            margin-top: 30px;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        #mensaje {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .correcto {
+            background-color: var(--secondary-color);
+            color: #fff;
+        }
+        .incorrecto {
+            background-color: var(--error-color);
+            color: #fff;
+        }
+        #puntuacion {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #timer {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        #nivelInfo {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Juego Avanzado de Elementos Patrimoniales</h1>
+    <div id="nivelInfo"></div>
+    <div id="timer">Tiempo: 120 segundos</div>
+    <div id="puntuacion">Puntuación: 0</div>
+    <div class="container">
+        <div id="elementos" class="column">
+            <h2>Elementos a Clasificar</h2>
+        </div>
+        <div id="activo" class="column">
+            <h2>Activo</h2>
+        </div>
+        <div id="pasivo" class="column">
+            <h2>Pasivo</h2>
+        </div>
+        <div id="patrimonio" class="column">
+            <h2>Patrimonio</h2>
+        </div>
+    </div>
+    <div class="botonera">
+        <button onclick="verificar()">Verificar</button>
+        <button onclick="reiniciar()">Reiniciar</button>
+    </div>
+    <div id="mensaje"></div>
+
+    <div id="modalInfo" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle"></h2>
+            <p id="modalText"></p>
+        </div>
+    </div>
+
+    <script>
+        const elementosPatrimoniales = [
+            { id: 'efectivo', nombre: 'Efectivo', tipo: 'activo', info: 'Dinero en caja y bancos' },
+            { id: 'inventario', nombre: 'Inventario', tipo: 'activo', info: 'Bienes destinados a la venta' },
+            { id: 'cuentasPorCobrar', nombre: 'Cuentas por Cobrar', tipo: 'activo', info: 'Deudas de clientes' },
+            { id: 'equipos', nombre: 'Equipos', tipo: 'activo', info: 'Maquinaria y herramientas de la empresa' },
+            { id: 'edificios', nombre: 'Edificios', tipo: 'activo', info: 'Propiedades inmobiliarias de la empresa' },
+            { id: 'vehiculos', nombre: 'Vehículos', tipo: 'activo', info: 'Medios de transporte de la empresa' },
+            { id: 'cuentasPorPagar', nombre: 'Cuentas por Pagar', tipo: 'pasivo', info: 'Deudas con proveedores' },
+            { id: 'prestamos', nombre: 'Préstamos', tipo: 'pasivo', info: 'Deudas con entidades financieras' },
+            { id: 'impuestosPorPagar', nombre: 'Impuestos por Pagar', tipo: 'pasivo', info: 'Obligaciones fiscales pendientes' },
+            { id: 'salariosporPagar', nombre: 'Salarios por Pagar', tipo: 'pasivo', info: 'Sueldos pendientes de pago' },
+            { id: 'capital', nombre: 'Capital', tipo: 'patrimonio', info: 'Aportaciones de los socios' },
+            { id: 'utilidades', nombre: 'Utilidades Retenidas', tipo: 'patrimonio', info: 'Beneficios no distribuidos' },
+            { id: 'reservas', nombre: 'Reservas', tipo: 'patrimonio', info: 'Fondos apartados para fines específicos' }
+        ];
+
+        let elementoArrastrado = null;
+        let puntuacion = 0;
+        let tiempoRestante = 120;
+        let temporizador;
+        let nivelActual = 1;
+        let elementosNivel;
+
+        function iniciarJuego() {
+            elementosNivel = obtenerElementosNivel();
+            const elementosContainer = document.getElementById('elementos');
+            elementosContainer.innerHTML = '';
+            elementosNivel.forEach(elemento => {
+                const div = document.createElement('div');
+                div.id = elemento.id;
+                div.className = 'elemento';
+                div.draggable = true;
+                div.textContent = elemento.nombre;
+                div.addEventListener('dragstart', iniciarArrastre);
+                div.addEventListener('click', mostrarInfo);
+                elementosContainer.appendChild(div);
+            });
+
+            document.querySelectorAll('.column').forEach(columna => {
+                columna.addEventListener('dragover', permitirSoltar);
+                columna.addEventListener('drop', soltarElemento);
+            });
+
+            actualizarNivelInfo();
+            iniciarTemporizador();
+        }
+
+        function obtenerElementosNivel() {
+            const elementosPorNivel = 4 + nivelActual;
+            return elementosPatrimoniales
+                .sort(() => Math.random() - 0.5)
+                .slice(0, elementosPorNivel);
+        }
+
+        function iniciarArrastre(e) {
+            elementoArrastrado = e.target;
+            e.target.classList.add('arrastrando');
+        }
+
+        function permitirSoltar(e) {
+            e.preventDefault();
+        }
+
+        function soltarElemento(e) {
+            e.preventDefault();
+            if (elementoArrastrado) {
+                const tipoColumna = e.target.id;
+                const tipoElemento = elementosPatrimoniales.find(el => el.id === elementoArrastrado.id).tipo;
+                
+                if (tipoColumna === tipoElemento) {
+                    e.target.appendChild(elementoArrastrado);
+                    puntuacion += 10;
+                    mostrarMensaje('¡Correcto! +10 puntos', true);
+                } else {
+                    puntuacion = Math.max(0, puntuacion - 5);
+                    mostrarMensaje('Incorrecto. -5 puntos', false);
+                }
+                
+                actualizarPuntuacion();
+                elementoArrastrado.classList.remove('arrastrando');
+                elementoArrastrado = null;
+
+                if (document.getElementById('elementos').children.length === 0) {
+                    siguienteNivel();
+                }
+            }
+        }
+
+        function verificar() {
+            const elementosRestantes = document.getElementById('elementos').children.length;
+            if (elementosRestantes === 0) {
+                mostrarMensaje('¡Felicidades! Has completado el nivel.', true);
+                siguienteNivel();
+            } else {
+                mostrarMensaje(`Aún quedan ${elementosRestantes} elementos por clasificar. ¡Sigue intentando!`, false);
+            }
+        }
+
+        function reiniciar() {
+            nivelActual = 1;
+            puntuacion = 0;
+            tiempoRestante = 120;
+            clearInterval(temporizador);
+            actualizarPuntuacion();
+            document.getElementById('timer').textContent = `Tiempo: ${tiempoRestante} segundos`;
+            document.getElementById('activo').innerHTML = '<h2>Activo</h2>';
+            document.getElementById('pasivo').innerHTML = '<h2>Pasivo</h2>';
+            document.getElementById('patrimonio').innerHTML = '<h2>Patrimonio</h2>';
+            document.getElementById('mensaje').textContent = '';
+            iniciarJuego();
+        }
+
+        function mostrarMensaje(texto, esExito) {
+            const mensajeElement = document.getElementById('mensaje');
+            mensajeElement.textContent = texto;
+            mensajeElement.className = esExito ? 'correcto' : 'incorrecto';
+            setTimeout(() => {
+                mensajeElement.textContent = '';
+                mensajeElement.className = '';
+            }, 3000);
+        }
+
+        function actualizarPuntuacion() {
+            document.getElementById('puntuacion').textContent = `Puntuación: ${puntuacion}`;
+        }
+
+        function iniciarTemporizador() {
+            temporizador = setInterval(() => {
+                tiempoRestante--;
+                document.getElementById('timer').textContent = `Tiempo: ${tiempoRestante} segundos`;
+                if (tiempoRestante <= 0) {
+                    clearInterval(temporizador);
+                    mostrarMensaje('¡Se acabó el tiempo!', false);
+                    reiniciar();
+                }
+            }, 1000);
+        }
+
+        function siguienteNivel() {
+            nivelActual++;
+            tiempoRestante += 30;
+            mostrarMensaje(`¡Nivel ${nivelActual} completado! +30 segundos`, true);
+            iniciarJuego();
+        }
+
+        function actualizarNivelInfo() {
+            document.getElementById('nivelInfo').textContent = `Nivel: ${nivelActual}`;
+        }
+
+        function mostrarInfo(e) {
+            const elemento = elementosPatrimoniales.find(el => el.id === e.target.id);
+            const modal = document.getElementById('modalInfo');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalText = document.getElementById('modalText');
+
+            modalTitle.textContent = elemento.nombre;
+            modalText.textContent = elemento.info;
+            modal.style.display = 'block';
+        }
+
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('modalInfo').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('modalInfo')) {
+                document.getElementById('modalInfo').style.display = 'none';
+            }
+        }
+
+        iniciarJuego();
+    </script>
+</body>
+</html
